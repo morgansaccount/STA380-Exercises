@@ -8,3 +8,6 @@ Exercises for Introduction to Machine Learning (Unsupervised Learning) at the Un
 [Question 1: Probability practice](https://github.com/morgansaccount/STA380-Exercises/blob/main/Probability_Question_1%20(1).pdf)
 
 [Question 2: Wrangling the Billboard Top 100]([https://github.com/morgansaccount/STA380-Exercises/blob/main/Probability_Question_1%20(1).pdf])
+
+
+[Question 1: Probability practice]([url](https://github.com/morgansaccount/STA380-Exercises/blob/main/Probability_Question_1%20(1).pdf)https://github.com/morgansaccount/STA380-Exercises/blob/main/Probability_Question_1%20(1).pdf)
