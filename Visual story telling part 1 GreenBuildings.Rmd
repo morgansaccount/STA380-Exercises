@@ -1,0 +1,227 @@
+---
+title: 'The Story of Green Building Analysis: A Visual Journey'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(mosaic)
+library(tidyverse)
+library(ggplot2)
+buildings <- read.csv("/Users/jyotisjoy/Downloads/greenbuildings.csv")
+```
+
+
+## Introduction
+
+In recent years, the appeal of environmentally conscious buildings has grown significantly, sparking interest among investors and the general public. The analysis conducted by the on-staff stats guru suggests that investing in a green building seems financially viable based on a straightforward comparison of median market rents between green and non-green buildings. However, this analysis might overlook the influence of confounding variables that could affect the relationship between rent and green status. This report examines the potential economic benefits of "going green" for a new mixed-use building project.
+
+
+## Initial Data Processing
+```{r echo = F, message=FALSE, warning=FALSE}
+#converting categorical variables to factors
+buildings$green_rating = as.factor(buildings$green_rating)
+buildings$LEED = as.factor(buildings$LEED)
+buildings$Energystar = as.factor(buildings$Energystar)
+buildings$amenities = as.factor(buildings$amenities)
+buildings$renovated = as.factor(buildings$renovated)
+buildings$class_a = as.factor(buildings$class_a)
+buildings$class_b = as.factor(buildings$class_b)
+buildings$net = as.factor(buildings$net)
+
+#creating a separate class variable
+buildings$class = ifelse(buildings$class_a == 1, 'A', ifelse(buildings$class_b == 1, 'B', 'C'))
+```
+
+Upon initial observation, the insights provided by the in-house statistical expert seem substantiated regarding the scenario. As evident in the data presented, there is a variance of $2.6 between environmentally conscious and non-environmentally conscious structures. We adjust for occupancy rates exceeding 10%.
+
+```{r echo = F, 0.2 , message=FALSE, warning=FALSE}
+buildings %>% filter(leasing_rate>=10)%>% group_by(green_rating) %>% summarise(med_rent = median(Rent), count = n())
+```
+
+The analysis of the distribution reveals a noticeable trend: on average, green buildings exhibit slightly higher rental rates compared to their non-green counterparts. Additionally, non-green buildings display a considerably greater number of outliers, affirming the statistical expert's justification for opting to use the median instead of the mean.
+
+```{r echo = F, 0.3, message=FALSE, warning=FALSE}
+#Rent Distribution Comparison by Green Status 
+ggplot(buildings, aes(x = as.factor(green_rating), y = Rent, fill = as.factor(green_rating))) +
+  geom_violin() +
+  labs(title = "Rent Distribution Comparison by Green Status",
+       x = "Green Status",
+       y = "Rent") +
+  scale_fill_manual(values = c("0" = "red", "1" = "green"))
+```
+
+
+## Exploratory Analysis
+
+```{r ,out.width=c('50%', '50%'), fig.show='hold', echo=FALSE, new, message=FALSE, warning=FALSE}
+ggplot(data=buildings) + 
+  geom_point(mapping=aes(x=cluster, y=Rent, colour=green_rating)) +
+  labs(x="Cluster", y='Rent', title = 'Green buildings: Cluster VS Rent',
+       color='Green building')
+
+
+ggplot(data=buildings) + 
+  geom_point(mapping=aes(x=size, y=Rent, colour=green_rating)) +
+  labs(x="Size", y='Rent', title = 'Green buildings: Size VS Rent',
+       color='Green building')
+
+ggplot(data=buildings) + 
+  geom_point(mapping=aes(x=age, y=Rent, colour=class_a))+
+  labs(x="Age", y='Rent', title = 'Class A: Age VS Rent',
+       color='Class A building')
+
+buildings %>% group_by(green_rating) %>% summarise(med_age = median(age), count = n())
+
+ggplot(data=buildings) + 
+  geom_point(mapping=aes(x=age, y=Rent, colour=green_rating))+
+  labs(x="Age", y='Rent', title = 'Green buildings: Age VS Rent',
+       color='Green building')
+
+```
+There is a correlation between rent and the cluster rent.
+An evident trend is observed: rent increases proportionally with the growth of available leasing space. The graph highlights a distinct positive correlation between building size and rent. This suggests that building size could potentially be a confounding factor impacting the connection between rent and green status. Larger buildings might command higher rents, introducing a possible confounding effect to the influence of green status.
+Most of the Class A buildings are relatively new in terms of age. Class A buildings command higher rents due to their premium status.
+Green buildings, on average, are approximately 15 years younger. There seems to be no discernible relationship between age and rent, indicating that age might not be a confounding variable.
+
+
+```{r out.width=c('50%', '50%'), fig.show='hold', echo=FALSE, message=FALSE, warning=FALSE}
+g = ggplot(buildings, aes(x=age))
+g + geom_density(aes(fill=factor(green_rating)), alpha=0.4)+
+  labs(x="Age", y='Density', title = 'Distribution of age',
+       fill='Green building')
+
+ggplot(buildings, aes(class_a, ..count..)) + geom_bar(aes(fill = green_rating), position = "dodge")+
+  labs(x="Class a", y='Number of buildings', title = 'Class A vs Green Buildings',
+       fill='Green building')
+
+g = ggplot(buildings, aes(x=size))
+g + geom_density(aes(fill=factor(green_rating)), alpha=0.4)+
+  labs(x="Size", y='Density', title = 'Distribution of size',
+       fill='Green building')
+
+
+medians <- aggregate(Rent ~  class_a, buildings, median)
+ggplot(data=buildings, aes(x=factor(class_a), y=Rent, fill=class_a)) + geom_boxplot()+
+  stat_summary(fun=median, colour="darkred", geom="point", 
+               shape=18, size=3,show.legend = FALSE) + 
+  geom_text(data = medians, aes(label = Rent, y = Rent - 20)) +
+  labs(x="Class A", y='Rent', title = 'Rent vs Class a',
+       fill='Class A')
+
+```
+Most of the green buildings exhibit a relatively lower age compared to their non-green counterparts.
+Green buildings tend to have a higher proportion of Class A structures.
+As building size increases, the proportion of both green and non-green buildings decreases.
+A noticeable disparity exists in the rental rates between Class A and non-Class A buildings.
+
+We have observed that the analysis conducted by the statistical expert is flawed, as it overlooks various factors influencing rental rates. The flaws in the analysis include: 
+Utilizing the median rent of all buildings for return calculations, without considering additional variables such as building size and class.
+Not accounting for the potential impact of factors like building class. For instance, it's evident that Class A green buildings yield higher rent than non-green buildings of the same class.
+In the upcoming analysis, we will explore the presence of confounding factors that could indirectly contribute to higher rental rates for green buildings.
+
+
+## Counfounding Variables Analysis 
+The guru's analysis overlooks the consideration of confounding variables that could influence the correlation between green rating and rent. Some potential confounding variables include:
+
+- Building quality: Higher-quality buildings are more likely to achieve green rating status and command higher rents, regardless of their green certification.
+- Amenities: Buildings offering more amenities might attract tenants willing to pay a premium due to these features. Simultaneously, these amenities could also contribute to the building receiving a green rating.
+- Age and renovations: Older buildings may have a reduced likelihood of obtaining green certification. However, renovating them could increase their rent potential and potentially lead to green certification.
+- Energy costs: Elevated energy expenses could provide an incentive for adopting green practices, while also potentially impacting the economics of energy-efficient buildings.
+
+
+### Building Quality 
+```{r echo = F, 0.5, message=FALSE, warning=FALSE}
+#Adjusted Expected Revenue Comparison
+data_adjusted <- buildings %>%
+  group_by(class_a, green_rating) %>%
+  summarize(median_rent = median(Rent), .groups = "drop")
+ggplot(data_adjusted, aes(x = factor(class_a), y = median_rent, fill = factor(green_rating))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Adjusted Expected Revenue Comparison",
+       x = "Building Quality",
+       y = "Median Rent") +
+  scale_fill_manual(values = c("1" = "green", "0" = "red")) +
+  scale_x_discrete(labels = c("Class A", "Class B"))
+
+```
+
+When factoring in building quality, the projected supplementary income for green buildings differs among quality categories. This underscores the significance of accounting for confounding variables when reaching a decision. The analysis implies that constructing a green building might not consistently result in an identical extent of extra revenue as initially predicted.
+
+### Rent vs. Occupancy Rates
+
+```{r echo = F, 0.6, message=FALSE, warning=FALSE}
+ggplot(buildings, aes(leasing_rate, Rent, color = green_rating)) + geom_point()
+```
+
+While the minimum rent remains consistent across all occupancy rate values, there is a subtle upward trend observed as occupancy rates increase. Let's delve into whether green buildings exhibit higher occupancy rates.
+
+```{r echo = F, 0.7, message=FALSE, warning=FALSE}
+buildings %>% group_by(green_rating) %>% summarise(med_occupancy = median(leasing_rate), count = n())
+```
+
+Indeed, green buildings do showcase slightly elevated occupancy rates compared to their non-green counterparts. As indicated in the case study, this discrepancy could potentially be attributed to enhanced awareness and public relations efforts for non-green buildings. However, the available data is insufficient to substantiate this assertion. Notably, the guru's presumption of a 90% occupancy rate for the envisioned green building aligns with the occupancy rates proposed within our dataset.
+
+### Age vs. Occupancy Rates
+
+Are younger buildings more or less likely to be occupied? 
+
+```{r echo = F, 0.8, message=FALSE, warning=FALSE}
+ggplot(buildings, aes(age, leasing_rate, color = green_rating)) + geom_point()
+
+```
+
+No evident correlation between the two factors is apparent. Green buildings do exhibit a higher number of occupants when the building's age is lower; yet, this might be attributed to the relatively recent emergence of green buildings, resulting in fewer older green structures available for observation.
+
+### Median Rent vs Amenities
+
+A notable majority of green buildings (72%) offer amenities, as opposed to only around 52% in the case of non-green buildings. Could this factor potentially contribute to the rent increase observed in green buildings?
+
+```{r echo = F, 0.9, message=FALSE, warning=FALSE}
+buildings %>% group_by(green_rating, amenities) %>% summarise(med_rent = median(Rent), count = n())
+
+```
+
+When amenities are held constant and a rent comparison is conducted between green and non-green buildings lacking amenities, there remains a rent premium of $2 for green buildings. Consequently, this prediction does not stand valid.
+
+### Rent vs Number of stories
+
+```{r echo = F, 0, message=FALSE, warning=FALSE}
+ggplot(buildings, aes(stories, Rent, color = green_rating)) + geom_point()
+
+```
+
+The minimal rent displays an upward trend corresponding to the growing number of stories. As a result, our client might have the potential to demand a greater rent by constructing a taller building.
+
+```{r echo = F, 1, message=FALSE, warning=FALSE}
+buildings %>% group_by(green_rating) %>% summarise(med_stories = median(stories))
+```
+
+In general, green buildings tend to have an additional story compared to non-green buildings. However, this distinction lacks sufficient strength to be regarded as a confounding factor.
+
+## Insights
+Is it possible to optimize revenue for green buildings by selecting optimal construction locations? By examining the cluster versus rent chart generated during the exploratory analysis, we can identify specific clusters warranting further in-depth analysis.
+
+```{r echo = F, 6, message=FALSE, warning=FALSE}
+buildings$revenue = 1.000*(buildings$size * buildings$Rent * buildings$leasing_rate)/100
+summary(buildings$revenue)
+
+buildings %>% filter(cluster>=100 & cluster<=300) %>% group_by(green_rating) %>%summarise(med = median(Rent), count = n())
+
+buildings %>% filter(cluster>=430 & cluster<=600) %>% group_by(green_rating) %>%summarise(med = median(Rent), count = n())
+
+buildings %>% filter(cluster>=950 & cluster<=1100) %>% group_by(green_rating) %>%summarise(med = median(Rent), count = n())
+```
+The most significant disparity observed is a $5 difference between green and non-green buildings within clusters 430-600. This variance might be attributed to heightened environmental awareness. As a result, potential additional revenue of $1.25 million could be generated from these clusters (5 * 250,000 = 1.25 million).
+
+**Summary:**
+There exists an extra $2.6 in revenue for green buildings compared to traditional buildings, with this difference rising to $5 within clusters 430-600.
+A subtle positive correlation is evident between rent and occupancy rates. Green buildings exhibit a slightly superior occupancy rate, possibly due to their younger average age and enhanced PR and advertising efforts.
+No discernible correlation appears between building age and occupancy rates.
+Upon deeper analysis, a slight positive relationship emerges between rent and building size. Additionally, green buildings tend to be approximately 100,000 sq. ft. larger on average than non-green buildings, which might introduce a confounding factor. However, further data is needed to validate this claim.
+
+**In Conclusion:**
+The analysis conducted by the on-staff guru holds validity, as the hypothesis of cost recovery within 8-9 years remains true. Currently, green buildings have an average age of 22 years. Anticipating aging as green buildings gain popularity, the guru's assumption of 30 years of revenue generation seems reasonable. Visual evidence indicates that green buildings indeed command higher rents. However, for a comprehensive understanding, factors like building quality and size must be considered. The story, supported by visualizations, aligns with the guru's conclusions while accounting for potential confounding variables. This approach effectively communicates the analysis to a non-technical audience, employing visuals and simple explanations.
+
+
+
