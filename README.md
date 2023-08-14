@@ -24,7 +24,7 @@ Question 5: Clustering and dimensionality reduction
 
 [Question 6: Market segmentation](https://github.com/morgansaccount/STA380-Exercises/blob/main/Market%20Segmentation.ipynb)
 
-[Question 7: The Reuters corpus](url)
+[Question 7: The Reuters corpus](https://github.com/morgansaccount/STA380-Exercises/blob/main/The%20Reuters%20Corpus.ipynb)
 
 Question 8: Association rule mining:
 
