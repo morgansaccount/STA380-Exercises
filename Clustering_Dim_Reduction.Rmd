@@ -1,0 +1,275 @@
+---
+title: "Clustering and Dimensionality Reduction"
+author: "Morgan Tucker"
+date: "2023-08-01"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Packages
+library(stats)
+library(tidyverse)
+```
+#### Question:
+
+The data in [wine.csv](https://github.com/jgscott/STA380/blob/master/data/wine.csv) contains information on 11 chemical properties of 6500 different bottles of *vinho verde* wine from northern Portugal. In addition, two other variables about each wine are recorded:
+
+-   whether the wine is red or white
+
+-   the quality of the wine, as judged on a 1-10 scale by a panel of certified wine snobs.
+
+Run PCA, tSNE, and any clustering algorithm of your choice on the 11 chemical properties (or suitable transformations thereof) and summarize your results. Which dimensionality reduction technique makes the most sense to you for this data? Convince yourself (and me) that your chosen approach is easily capable of distinguishing the reds from the whites, using only the "unsupervised" information contained in the data on chemical properties. Does your unsupervised technique also seem capable of distinguishing the higher from the lower quality wines? Present appropriate numerical and/or visual evidence to support your conclusions.
+
+To clarify: I'm not asking you to run a supervised learning algorithms. Rather, I'm asking you to see whether the differences in the labels (red/white and quality score) emerge naturally from applying an unsupervised technique to the chemical properties. This should be straightforward to assess using plots.
+
+#### Roadmap: 
+
+1. PCA:
+
+    -   Wine Color
+
+        -   Eigenvalues, Barplot, and Scree Plot: Analysis of Variance
+    
+        -   PCA Plot
+
+        -   Loading Scores
+      
+    -   Wine Quality
+    
+        -   PCA Plot
+
+2. tSNE: 
+
+    -   Wine Color
+
+    -   Wine Quality
+
+3. K-means
+
+    -   Wine Color
+
+    -   Wine Quality
+
+        -   Residual Sugar
+        
+4. Conclusion
+
+
+## Upload Data
+```{r}
+wine_df <- read_csv("~/Desktop/ML/unsup_r_files/data/wine.csv")
+```
+
+
+## Exploration
+```{r}
+summary(wine_df)
+
+table(wine_df$color)
+table(wine_df$quality)
+```
+
+
+## PCA
+```{r}
+# preparation of the data for PCA
+wine_df$color <- as.factor(wine_df$color)
+wine_df$quality <- as.factor(wine_df$quality)
+
+# extracting chemical properties
+chem_props <- colnames(wine_df)[1:11]
+
+# perform initial PCA
+set.seed(123)
+pca_result <- prcomp(wine_df[chem_props], scale. = TRUE)
+
+# create a df w/ PCA results
+pca_df <- data.frame(PC1 = pca_result$x[, 1], 
+                     PC2 = pca_result$x[, 2], 
+                     color = wine_df$color)
+```
+
+```{r}
+# SDEV
+# eigenvalues, calc how much variation in the original data each PC accounts for and plot
+pca_var <- pca_result$sdev^2
+
+#calc percentages of variance captures for each PC
+pca_var_percent <- round(pca_var/sum(pca_var)*100, 1)
+for (i in 1:length(pca_var_percent)) {
+  cat(paste("PC", i, ": Eigenvalue =", pca_var[i], ", Explained Variance =", pca_var_percent[i], "%\n"))
+}
+
+# creating a barplot
+barplot(pca_var_percent, xlab="Principal Component", 
+        ylab="Percent Variation Explained",
+        names.arg = paste("PC", 1:length(pca_var_percent), sep = ""),
+        main = "Percent Variation Explained by Principal Component (Fig. 1)")
+# The barplot shows that the first PC accounts for the most variation within the data.
+
+# scree plot
+plot(1:length(pca_var_percent), pca_var_percent, type = "b", 
+     xlab = "Principal Component", ylab = "Percent Variance Explained",
+     main = "Scree Plot: PCA Variance Explained (Fig. 1.5*)")
+# Scree plot leads us to draw the same conclusions described by the barplot
+```
+Upon examination of the eigenvalues and variance explained percentages for each PC, it becomes evident that the first principal component (PC1) carries the highest eigenvalue and contributes significantly to the variability in the data, explaining a substantial portion of the overall variance. As we progress through subsequent principal components, the eigenvalues and variance explained percentages decrease, signifying that these components capture progressively less variation. 
+The scree plot (Fig. 1.5*) further emphasizes the rapid decline in variance explained as we move from the first principal component to the subsequent ones. This plot visually illustrates that the first few principal components account for the majority of the variance within the dataset. Specifically, the cumulative variance explained by the first eight principal components is around 95%, suggesting that these components can effectively capture the essential characteristics of the data.
+
+```{r}
+# scatter plot
+ggplot(data=pca_df, aes(x=PC1, y=PC2, color=color)) +
+  geom_point() + theme_bw() +
+  xlab(paste("PC1 - ", pca_var_percent[1], "%", sep="")) +
+  ylab(paste("PC2 - ", pca_var_percent[2], "%", sep="")) +
+  ggtitle("PCA: Red vs. White Wines by Chemical Properties (Fig. 2)")
+```
+The scatter plot, generated using the first two principal components (PC1 and PC2), visually represents the distribution of data points in a reduced-dimensional space. The plot shows the data points exhibit a noticeable separation into two distinct clusters. The clusters primarily align with the color of the wines—red and white. The presence of some overlap between the clusters suggests that there are instances where the chemical properties alone do not perfectly differentiate between the two wine colors. However, the majority of data points are clearly grouped according to their wine color, indicating that these chemical properties play a significant role in distinguishing between red and white wines
+
+```{r}
+# ROTATION - Loading scores (push sample left = neg score, push sample right = pos score)
+pca_result$rotation
+
+# PC 1
+ls_pc1 <- pca_result$rotation[,1]
+scores_pc1 <- abs(ls_pc1) # get the magnitudes
+scores_pc1_ranked <- sort(scores_pc1, decreasing=TRUE)
+top_10_pc1 <- names(scores_pc1_ranked[1:10])
+ 
+top_10_pc1 ## show the names of the top 10 columns
+pca_result$rotation[top_10_pc1,1] ## show the scores (and +/- sign)
+```
+An interpretation of the loading scores helps us understand which variables contribute the most to the observed patterns in the data along the first principal component. Variables 'Total.sulfur.dioxide' and 'free.sulfur.dioxide' have the highest positive loading scores, indicating that higher values of these variables are associated with higher values of PC1. In other words, variations in these variables contribute positively to the direction of greatest variability captured by PC1. It also appears that the variable 'volatile.acidity' has a moderate negative loading score. This suggests that higher values of these variables are associated with lower values of PC1.
+
+```{r}
+#PCA for Wine Quality
+
+# Create a df w/ PCA results
+pca_df_wq <- data.frame(PC1 = pca_result$x[, 1], 
+                     PC2 = pca_result$x[, 2], 
+                     color = wine_df$quality)
+# first pc accounts for the most variation within the data
+ 
+# scatter plot
+ggplot(data=pca_df_wq, aes(x=PC1, y=PC2, color=color)) +
+  geom_point() + theme_bw() +
+  xlab(paste("PC1 - ", pca_var_percent[1], "%", sep="")) +
+  ylab(paste("PC2 - ", pca_var_percent[2], "%", sep="")) +
+  ggtitle("PCA: Wine Quality by Chemical Properties (Fig. 3)")
+
+```
+The scatter plot depicting the distribution of wine quality scores based on the first two principal components (PCs) (Fig. 3) reveals that the PCs do not provide a clear discrimination of wine quality. Unlike the case of distinguishing wine color, where distinct clusters were observed, the plot of wine quality against the PCs showcases significant overlap and lacks distinct, well-defined clusters.
+This overlap in the scatter plot suggests that the chemical properties analyzed in the PCA are not strongly correlated with wine quality scores. The absence of clear boundaries or groupings in the plot indicates that the variability captured by the first two PCs does not correspond to the variations in wine quality in a straightforward manner. Wine quality is likely influenced by a combination of factors beyond those represented by these principal components, leading to the observed lack of clear separation.
+So, while PCA can be a powerful tool for dimensionality reduction and data visualization, its limitations are evident in cases where the data's underlying patterns do not align well with the chosen components.
+
+
+## tSNE
+```{r}
+#tSNE
+library(Rtsne)
+
+wine_df_2 <- unique(wine_df)
+
+# Perform t-SNE
+set.seed(123)
+tsne_result <- Rtsne(wine_df_2, dims = 2, perplexity = 30)
+
+# create t-SNE df
+tsne_df <- data.frame(X1 = tsne_result$Y[, 1], 
+                      X2 = tsne_result$Y[, 2], 
+                      color = wine_df_2$color,
+                      quality = wine_df_2$quality)
+
+# Plotting t-SNE results
+ggplot(data = tsne_df, aes(x = X1, y = X2, color = color)) +
+  geom_point() +
+  ggtitle("t-SNE: Red vs. White Wines by Chemical Properties (Fig. 4)")
+```
+The t-SNE analysis of the dataset reveals interesting insights regarding the relationship between wine color and chemical properties. The t-SNE plot exhibits a noticeable degree of separation between clusters corresponding to different wine colors, indicating that the chemical properties indeed play a significant role in distinguishing red and white wines. However, it's important to note that while the clusters show some sort of degree of separation, they also have a fair amount of overlap between them.
+
+```{r}
+# t-SNE on wine quality
+tsne_df <- data.frame(X1 = tsne_result$Y[, 1], X2 = tsne_result$Y[, 2], color = wine_df_2$quality)
+
+ggplot(data = tsne_df, aes(x = X1, y = X2, color = color)) +
+  geom_point() +
+  ggtitle("t-SNE: Wine Quality by Chemical Properties (Fig. 5)")
+```
+Upon careful analysis aimed at distinguishing between wine quality scores within the t-SNE plot, it becomes evident that no well-defined clusters are readily discernible from the visualization. The data points do not exhibit clear groupings that align with specific wine quality scores. This observation highlights the complexity and potentially subtle nature of the relationships between chemical properties and wine quality
+
+
+## K-means clustering
+```{r}
+# K-means clustering based on PCs, centers = 2
+kmeans_clusters <- kmeans(pca_result$x[, 1:2], centers = 2)
+
+# Add k-means cluster assignments to the pca_df
+pca_df$kmeans_cluster <- factor(kmeans_clusters$cluster)
+
+# Scatter plot
+ggplot(data = pca_df, aes(x = PC1, y = PC2, color = color, shape = kmeans_cluster)) +
+  geom_point(size = 3) + theme_bw() +
+  xlab(paste("PC1 - ", pca_var_percent[1], "%", sep = "")) +
+  ylab(paste("PC2 - ", pca_var_percent[2], "%", sep = "")) +
+  ggtitle("K-means Clusters based on PCA: Red vs. White Wines (Fig. 6)") +
+  scale_shape_manual(values = c(19, 17)) +
+  guides(shape = guide_legend(title = "K-means Cluster")) +
+  theme(legend.position = "bottom")
+
+# Display cluster assignments
+table(kmeans_clusters$cluster)
+```
+In Figure 6, we can observe the emergence of two distinct clusters as identified by the k-means algorithm. These clusters exhibit a degree of separation that correlates with wine color, signifying a preliminary alignment.
+However, it's important to note that the clusters are not entirely exclusive. While the cluster boundary between the red-colored wines and k-means cluster 1 seems well-defined, the distinction for white wines is less clear-cut. The majority of white wines are assigned to k-means cluster 2, indicating a tendency for this cluster to encompass white wines. Yet, intriguingly, some white wines, particularly those located closer to the left of the white wine group, are assigned to k-means cluster 1.
+This overlap raises the possibility of subtle variations within the white wine group that extend beyond the primary color distinction. It's plausible that other chemical properties beyond those accounted for in the PCA are contributing to these nuances. Therefore, while k-means successfully captures general trends related to wine color, the presence of overlapping points suggests the existence of additional factors influencing the clustering patterns.
+
+```{r}
+# k-means clustering for wine quality
+
+# K-means clustering based on PCs with centers = 7
+kmeans_clusters <- kmeans(pca_result$x[, 1:2], centers = 7)
+
+# Add k-means cluster assignments to the pca_df
+pca_df$kmeans_cluster <- factor(kmeans_clusters$cluster)
+
+# Scatter plot
+ggplot(data = pca_df, aes(x = PC1, y = PC2, color = kmeans_cluster)) +
+  geom_point() + theme_bw() +
+  xlab(paste("PC1 - ", pca_var_percent[1], "%", sep = "")) +
+  ylab(paste("PC2 - ", pca_var_percent[2], "%", sep = "")) +
+  ggtitle("K-means Clusters based on PCA: Wine Quality (Fig. 8)")
+
+# Display cluster assignments
+table(kmeans_clusters$cluster)
+cluster_stats2 <- aggregate(wine_df, by = list(cluster = kmeans_clusters$cluster), FUN = mean)
+
+# Visualize cluster characteristics for residual sugar
+ggplot(cluster_stats2, aes(x = cluster, y = residual.sugar)) +
+  geom_bar(stat = "identity") +
+  xlab("Cluster") + geom_text(aes(label = cluster), vjust = 1.5, colour = "white") +
+  ylab("Average Fixed Acidity") +
+  ggtitle("Cluster Characteristics: Residual Sugar by Cluster (Fig. 7)")
+```
+The k-means clustering analysis applied to the principal components of the PCA provides insights into the underlying structure of the data. While the clusters are not physically separated in the two-dimensional space, there are clearly distinguished groups within the dataset. This suggests that even though the separation might not be visually distinct, there are underlying patterns that contribute to the clustering. In particular, the exploration of residual sugar content indicates a potential connection to wine quality scores, where lower quality wines tend to exhibit higher residual sugar levels. This nuanced understanding contributes to our knowledge of how various chemical properties relate to wine quality and helps uncover subtle trends that may not be immediately evident from a visual inspection of the data.
+
+
+## Conclusion:
+
+PCA Analysis:
+For wine color, our PCA analysis revealed a clear separation between red and white wines in the reduced-dimensional space, primarily along the first principal component (PC1). The barplot and scree plot of explained variance confirmed that the first few principal components contribute significantly to the variance in the data. Moreover, our PCA scatter plot further substantiated the separation between the two wine colors. However, when examining wine quality, the PCA scatter plot did not show well-defined clusters. Instead, there was considerable overlap, indicating that the chemical properties alone might not be strongly correlated with wine quality scores. This suggests that other factors beyond the chosen chemical properties contribute to wine quality.
+
+t-SNE Analysis:
+The t-SNE analysis exhibited a degree of separation between the clusters corresponding to different wine colors. This suggests that the chemical properties indeed play a significant role in distinguishing red and white wines. Although there was some overlap, the clusters showed a fair separation between the colors. However, when it came to distinguishing wine quality, t-SNE plots did not exhibit clear, distinct clusters for different quality scores. This implies that the chemical properties might not be directly aligned with wine quality scores in the same manner as with wine color.
+
+K-means Clustering:
+Using K-means clustering on PCA-transformed data for both wine color and quality, we observed distinct clusters for wine color. However, it's important to note that the clusters are not entirely exclusive, and some overlap exists, particularly among white wines. This suggests that while chemical properties are strongly associated with color, other variables might influence wine color classification.
+When examining wine quality using K-means clustering, we found that the clusters did not align perfectly with quality scores. This further emphasizes the complexity of factors influencing wine quality beyond the chemical properties included in our analysis.
+
+Overall Findings/Conclusion:
+In conclusion, based on our analysis, the PCA technique seems effective in distinguishing between red and white wines based on chemical properties. The clusters exhibited the most separation of all the techniques employed, though some overlap existed. While all unsupervised techniques showcased the ability to differentiate based on wine color, the same level of distinction was not observed for wine quality. This implies that additional factors, beyond the selected chemical properties, influence the perceived quality of wine. Overall, the chosen dimensionality reduction techniques provide valuable insights into the relationships between chemical properties, wine color, and quality. However, the complexity of wine quality and its multidimensional nature suggest that unsupervised techniques alone may not capture all the nuances of this attribute.
