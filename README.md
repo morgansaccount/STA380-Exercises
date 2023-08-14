@@ -17,7 +17,10 @@ Question 3: Visual story telling part 1: green buildings
 
 [Question 4: Visual story telling part 2: Capital Metro data](https://github.com/morgansaccount/STA380-Exercises/blob/main/Visual%20story%20telling%20part%202.ipynb)
 
-[Question 5: Clustering and dimensionality reduction](url)
+Question 5: Clustering and dimensionality reduction
+
+- [RMD file]([https://github.com/morgansaccount/STA380-Exercises/blob/main/README.md](https://github.com/morgansaccount/STA380-Exercises/blob/main/Clustering_Dim_Reduction.Rmd))
+- [HTML]()
 
 [Question 6: Market segmentation](https://github.com/morgansaccount/STA380-Exercises/blob/main/Market%20Segmentation.ipynb)
 
