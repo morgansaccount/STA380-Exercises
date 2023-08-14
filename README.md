@@ -11,9 +11,9 @@ Exercises for Introduction to Machine Learning (Unsupervised Learning) at the Un
 
 Question 3: Visual story telling part 1: green buildings
 
-[RMD file](https://github.com/morgansaccount/STA380-Exercises/blob/main/Visual%20story%20telling%20part%201%20GreenBuildings.Rmd)
+- [RMD file](https://github.com/morgansaccount/STA380-Exercises/blob/main/Visual%20story%20telling%20part%201%20GreenBuildings.Rmd)
 
-[PDF](https://github.com/morgansaccount/STA380-Exercises/blob/main/Visual%20story%20telling%20part%201%20GreenBuildings.pdf)
+- [PDF](https://github.com/morgansaccount/STA380-Exercises/blob/main/Visual%20story%20telling%20part%201%20GreenBuildings.pdf)
 
 [Question 4: Visual story telling part 2: Capital Metro data](https://github.com/morgansaccount/STA380-Exercises/blob/main/Visual%20story%20telling%20part%202.ipynb)
 
@@ -25,8 +25,8 @@ Question 3: Visual story telling part 1: green buildings
 
 Question 8: Association rule mining:
 
-[Rmd file](https://github.com/morgansaccount/STA380-Exercises/blob/main/Association%20Rule%20Mininng.Rmd)
+- [Rmd file](https://github.com/morgansaccount/STA380-Exercises/blob/main/Association%20Rule%20Mininng.Rmd)
 
-[PDF](https://github.com/morgansaccount/STA380-Exercises/blob/main/Association-Rule-Mininng.pdf)
+- [PDF](https://github.com/morgansaccount/STA380-Exercises/blob/main/Association-Rule-Mininng.pdf)
 
 [Question 9: Image classification with neural networks](https://github.com/morgansaccount/STA380-Exercises/blob/main/Image%20Classification%20with%20Neural%20Networks%20(1).ipynb)
