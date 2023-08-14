@@ -1,7 +1,7 @@
 # STA380-Exercises
 
 # Authors:
-Morgan Tucker, Vi Tran, Ali Khan, Jyotis Joy
+Morgan Tucker, Vi Tran (EID: VTT332), Ali Khan (EID: ask3467), Jyotis Joy
 
 Exercises for Introduction to Machine Learning (Unsupervised Learning) at the University of Texas at Austin for Summer 2023
 
